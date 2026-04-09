@@ -188,7 +188,7 @@ textarea{resize:none;line-height:1.6}
   </div>
   <div class="row2">
     <div class="field"><label>👤 ผู้ส่ง</label><input type="text" id="f-sender" placeholder="ชื่อ-นามสกุล"></div>
-    <div class="field"><label>🏷 ฝ่าย</label><input type="text" id="f-dept" placeholder="เช่น บัญชี, ขาย"></div>
+    <div class="field"><label>🏷 ฝ่ายผู้ส่ง</label><input type="text" id="f-dept" placeholder="เช่น บัญชี, ขาย"></div>
   </div>
   <div class="row2">
     <div class="field">
@@ -211,7 +211,10 @@ textarea{resize:none;line-height:1.6}
     </div>
   </div>
   <div class="field"><label>📦 รายการเอกสาร / สิ่งของ</label><textarea id="f-items" rows="3" placeholder="ระบุรายการ เช่น เอกสารสัญญา 2 ฉบับ"></textarea></div>
-  <div class="field"><label>👤 ผู้รับ</label><input type="text" id="f-receiver" placeholder="ชื่อผู้รับปลายทาง"></div>
+  <div class="row2">
+    <div class="field"><label>👤 ผู้รับ (ปลายทาง)</label><input type="text" id="f-receiver" placeholder="ชื่อผู้รับปลายทาง"></div>
+    <div class="field"><label>🏷 ฝ่ายผู้รับ</label><input type="text" id="f-receiver-dept" placeholder="เช่น บัญชี, ขาย"></div>
+  </div>
   <div class="field">
     <label>🗂 ผู้รับฝาก <span style="color:var(--red);font-size:12px">*จำเป็น</span></label>
     <input type="text" id="f-custodian" list="custodian-list" placeholder="ระบุชื่อผู้รับฝาก" autocomplete="off">
@@ -328,8 +331,9 @@ function doPost(e) {
   let sheet = ss.getSheetByName('บันทึกการส่ง');
   if (!sheet) {
     sheet = ss.insertSheet('บันทึกการส่ง');
-    const headers = ['วันที่ส่ง','เวลาส่ง','ผู้ส่ง','ฝ่าย',
-      'จากสาขา','รายการ','ลิงก์รูป','ผู้รับ','ถึงสาขา','ผู้รับฝาก','ID'];
+    const headers = ['วันที่ส่ง','เวลาส่ง','ผู้ส่ง','ฝ่ายผู้ส่ง',
+      'จากสาขา','รายการ','ลิงก์รูป','ผู้รับ','ฝ่ายผู้รับ',
+      'ถึงสาขา','ผู้รับฝาก','ID'];
     sheet.appendRow(headers);
     sheet.getRange(1,1,1,headers.length)
       .setFontWeight('bold')
@@ -362,7 +366,7 @@ function doPost(e) {
   sheet.appendRow([
     data.date, data.time, data.sender, data.dept,
     data.from, data.items, photoLinks,
-    data.receiver, data.to, data.custodian, data.id
+    data.receiver, data.receiverDept, data.to, data.custodian, data.id
   ]);
 
   return ContentService
@@ -464,6 +468,7 @@ async function saveRecord(){
     to: document.getElementById('f-to').value,
     items: document.getElementById('f-items').value.trim(),
     receiver: document.getElementById('f-receiver').value.trim(),
+    receiverDept: document.getElementById('f-receiver-dept').value.trim(),
     custodian: document.getElementById('f-custodian').value,
     photos:[...photoData],
     photoCount:photoData.length
@@ -506,7 +511,7 @@ async function pushToSheets(d){
 }
 
 function clearForm(){
-  ['f-sender','f-dept','f-items','f-receiver'].forEach(id=>document.getElementById(id).value='');
+  ['f-sender','f-dept','f-items','f-receiver','f-receiver-dept'].forEach(id=>document.getElementById(id).value='');
   ['f-from','f-to','f-custodian'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-photo').value='';
   document.getElementById('photo-preview').innerHTML='';
@@ -535,8 +540,9 @@ function renderHistory(){
         ${r.photos&&r.photos.length?'<span style="font-size:11px;color:var(--text3);white-space:nowrap">📷'+r.photos.length+'</span>':''}
       </div>
       <div class="item-meta">
-        ${r.date} ${r.time} &nbsp;·&nbsp; ${r.sender}${r.dept?' ('+r.dept+')':''}
+        ${r.date} ${r.time} &nbsp;·&nbsp; ${r.sender}${r.dept?' (ฝ่ายผู้ส่ง: '+r.dept+')':''}
         <br><span class="badge badge-blue">${r.from}</span> → <span class="badge badge-green">${r.to}</span>
+        ${r.receiver?'<br>👤 ผู้รับ: '+r.receiver+(r.receiverDept?' (ฝ่ายผู้รับ: '+r.receiverDept+')':''):''}
         ${r.custodian?' <span class="badge badge-amber">'+r.custodian+'</span>':''}
       </div>
     </div>`).join('');
@@ -551,9 +557,9 @@ function openDetail(id){
     `<div class="photo-preview" style="margin-top:4px">${r.photos.map(p=>`<img src="${p}">`).join('')}</div>`:
     '<span style="color:var(--text3)">ไม่มีรูป</span>';
   document.getElementById('modal-body').innerHTML=
-    [['📅 วันเวลา',r.date+' '+r.time+' น.'],['👤 ผู้ส่ง',r.sender+(r.dept?' ('+r.dept+')':'')],
+    [['📅 วันเวลา',r.date+' '+r.time+' น.'],['👤 ผู้ส่ง',r.sender+(r.dept?' (ฝ่าย: '+r.dept+')':'')],
      ['🏢 จากสาขา',r.from],['🏢 ถึงสาขา',r.to],['📦 รายการ',r.items],
-     ['👤 ผู้รับ',r.receiver||'-'],['🗂 ผู้รับฝาก',r.custodian||'-'],['📷 รูปถ่าย',photos]]
+     ['👤 ผู้รับ',(r.receiver||'-')+(r.receiverDept?' (ฝ่าย: '+r.receiverDept+')':'')],['🗂 ผู้รับฝาก',r.custodian||'-'],['📷 รูปถ่าย',photos]]
     .map(([k,v])=>`<div class="detail-row"><div class="detail-key">${k}</div><div class="detail-val">${v}</div></div>`).join('');
   document.getElementById('detail-modal').classList.add('show');
 }
@@ -568,6 +574,7 @@ function editRecord(){
   document.getElementById('f-to').value=r.to;
   document.getElementById('f-items').value=r.items;
   document.getElementById('f-receiver').value=r.receiver;
+  document.getElementById('f-receiver-dept').value=r.receiverDept||'';
   document.getElementById('f-custodian').value=r.custodian;
   photoData=r.photos?[...r.photos]:[];
   document.getElementById('photo-preview').innerHTML=photoData.map(p=>`<img src="${p}">`).join('');
@@ -596,11 +603,11 @@ function buildLineText(r){
 [King's Yont Transfer]
 ━━━━━━━━━━━━━━━━━━━━
 📅 วันที่/เวลา  : ${r.date}  เวลา ${r.time} น.
-👤 ผู้ส่ง       : ${r.sender}${r.dept ? ' (' + r.dept + ')' : ''}
+👤 ผู้ส่ง       : ${r.sender}${r.dept ? ' (ฝ่ายผู้ส่ง: ' + r.dept + ')' : ''}
 🏢 จากสาขา    : ${r.from}
 🏢 ถึงสาขา     : ${r.to}
 📦 รายการ      : ${r.items}
-👤 ผู้รับ       : ${r.receiver || '(ไม่ระบุ)'}${r.custodian ? `
+👤 ผู้รับ       : ${r.receiver || '(ไม่ระบุ)'}${r.receiverDept ? ' (ฝ่ายผู้รับ: ' + r.receiverDept + ')' : ''}${r.custodian ? `
 🗂 ผู้รับฝาก   : ${r.custodian}` : ''}${r.photos && r.photos.length ? `
 📷 รูปถ่าย    : ${r.photos.length} รูป (ดูรูปแนบ)` : ''}
 ━━━━━━━━━━━━━━━━━━━━
@@ -636,6 +643,7 @@ async function confirmSendLine(){
       to:r.to,
       items:r.items,
       receiver:r.receiver||'',
+      receiverDept:r.receiverDept||'',
       custodian:r.custodian||'',
       photoCount:r.photos&&r.photos.length?r.photos.length:0,
       text:buildLineText(r)
