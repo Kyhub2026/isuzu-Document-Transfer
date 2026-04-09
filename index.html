@@ -474,7 +474,36 @@ function switchTab(t){
   document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['form','history'][i]===t));
   document.getElementById('tab-form').style.display=t==='form'?'block':'none';
   document.getElementById('tab-history').style.display=t==='history'?'block':'none';
-  if(t==='history') renderHistory();
+  if(t==='history'){ loadFromSheets(); renderHistory(); }
+}
+
+// ✅ FIX 3: โหลดข้อมูลจาก Google Sheet (merge กับ localStorage)
+async function loadFromSheets(){
+  const url=gsUrl||localStorage.getItem('ky-hub-gs-url');
+  if(!url) return;
+  try{
+    const resp=await fetch(url+'?action=getRecords',{redirect:'follow'});
+    const result=await resp.json().catch(()=>null);
+    if(!result||result.status!=='ok'||!Array.isArray(result.records)) return;
+    const sheetRecords=result.records;
+    if(sheetRecords.length===0) return;
+    // merge: เพิ่มรายการจาก sheet ที่ไม่มีใน localStorage
+    const existingIds=new Set(records.map(r=>String(r.id)));
+    let added=0;
+    sheetRecords.forEach(r=>{
+      if(!existingIds.has(String(r.id))){
+        records.push(r);
+        added++;
+      }
+    });
+    if(added>0){
+      // เรียงจากใหม่ไปเก่า
+      records.sort((a,b)=>String(b.id).localeCompare(String(a.id)));
+      localStorage.setItem('ky-hub-records',JSON.stringify(records));
+      renderHistory();
+      showToast(`✅ โหลดข้อมูลจาก Sheets เพิ่ม ${added} รายการ`,'ok');
+    }
+  }catch(e){ /* silent fail */ }
 }
 
 function addPhotos(input){
@@ -581,15 +610,25 @@ async function pushToSheets(d){
   try{
     const hasPhotos=d.photos&&d.photos.length>0;
     setNote(hasPhotos?'⏳ กำลังอัปโหลดรูปไป Drive...':'⏳ กำลัง sync Google Sheets...','#e8f4fd');
-    const resp=await fetch(url,{method:'POST',body:JSON.stringify({...d})});
-    const result=await resp.json().catch(()=>({}));
+    // ✅ FIX 1: ใช้ redirect:follow เพื่อให้ follow redirect ของ Apps Script
+    const resp=await fetch(url,{
+      method:'POST',
+      redirect:'follow',
+      body:JSON.stringify({...d})
+    });
+    let result={};
+    try{ result=await resp.json(); }catch(e){ result={}; }
     if(result.fileIds && result.fileIds.length>0){
       const idx=records.findIndex(r=>r.id===d.id);
       if(idx>=0){ records[idx].fileIds=result.fileIds; localStorage.setItem('ky-hub-records',JSON.stringify(records)); }
     }
-    const msg=hasPhotos?`✅ Sheets + อัปโหลดรูป ${d.photos.length} ใบ ไป Drive สำเร็จ`:'✅ บันทึกลง Google Sheets สำเร็จ';
-    setNote(msg,'#d4edda');
-    showToast(msg,'ok');
+    if(result.status==='ok'||result.status==='saved'||result.message==='saved'){
+      const msg=hasPhotos?`✅ Sheets + อัปโหลดรูป ${d.photos.length} ใบ ไป Drive สำเร็จ`:'✅ บันทึกลง Google Sheets สำเร็จ';
+      setNote(msg,'#d4edda');
+      showToast(msg,'ok');
+    } else {
+      setNote('⚠️ บันทึก Sheets อาจไม่สำเร็จ: '+(result.message||'ไม่ทราบสาเหตุ'),'#fff3cd');
+    }
   }catch(e){
     setNote('❌ sync Google Sheets ไม่สำเร็จ (ข้อมูลบันทึกในเครื่องแล้ว)','#f8d7da');
     showToast('⚠️ บันทึกในเครื่องแล้ว แต่ sync Sheets ไม่สำเร็จ','warn');
