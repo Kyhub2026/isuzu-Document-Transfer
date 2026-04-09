@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบส่งเอกสารระหว่างสาขา</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:#f5f5f3;color:#1a1a1a;font-size:15px}
+.header{background:#1a1a1a;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:10px}
+.header h1{font-size:16px;font-weight:500}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e5e5e5;padding:0 16px;gap:4px}
+.tab{padding:12px 16px;font-size:14px;cursor:pointer;border:none;background:none;color:#666;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:#1a1a1a;border-bottom:2px solid #1a1a1a;font-weight:500}
+.content{padding:16px;max-width:700px;margin:0 auto}
+.card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:18px;margin-bottom:14px}
+.section-title{font-size:15px;font-weight:600;margin-bottom:14px;color:#1a1a1a}
+.field{margin-bottom:12px}
+label{display:block;font-size:12px;color:#666;margin-bottom:4px;font-weight:500}
+input,select,textarea{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-family:'Sarabun',sans-serif;background:#fff;color:#1a1a1a}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#888;box-shadow:0 0 0 2px rgba(0,0,0,0.06)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{padding:9px 18px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:500;border:1px solid #ddd;background:#fff;color:#1a1a1a;font-family:'Sarabun',sans-serif}
+.btn:hover{background:#f5f5f3}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn-primary:hover{background:#333}
+.btn-line{background:#06C755;color:#fff;border-color:#06C755}
+.btn-line:hover{background:#05a848}
+.btn-danger{background:#fff5f5;color:#c0392b;border-color:#f5c6c6}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+.badge-blue{background:#e8f0fe;color:#1a56db}
+.badge-green{background:#e8f8ee;color:#166534}
+.badge-amber{background:#fff8e1;color:#92400e}
+.history-item{border:1px solid #e8e8e8;border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer;background:#fff}
+.history-item:hover{background:#f9f9f8;border-color:#ccc}
+.history-meta{font-size:12px;color:#888;margin-top:4px;line-height:1.7}
+.search-bar{display:flex;gap:8px;margin-bottom:12px}
+.search-bar input{flex:1}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filter-row select{flex:1;min-width:120px;width:auto}
+.photo-area{border:1.5px dashed #ccc;border-radius:8px;padding:16px;text-align:center;cursor:pointer;color:#888;font-size:14px}
+.photo-area:hover{background:#f9f9f8}
+.photo-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.photo-preview img{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid #e8e8e8}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:20px;width:92%;max-width:500px;max-height:88vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:14px}
+.detail-table{width:100%;font-size:13px;border-collapse:collapse}
+.detail-table td{padding:5px 0;vertical-align:top}
+.detail-table td:first-child{color:#666;width:90px;font-weight:500}
+.line-preview{background:#1b1b1b;color:#e0e0e0;border-radius:10px;padding:16px;font-size:13px;line-height:1.9;white-space:pre-wrap;font-family:monospace}
+.toast{position:fixed;bottom:24px;right:20px;background:#1a1a1a;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.toast.show{opacity:1}
+.del-confirm{background:#fff5f5;border:1px solid #f5c6c6;border-radius:8px;padding:12px;margin-top:10px;font-size:13px;color:#c0392b}
+.empty{text-align:center;color:#aaa;font-size:14px;padding:2rem}
+.photo-icon{font-size:22px;display:block;margin-bottom:4px}
+.gs-note{font-size:12px;color:#888;margin-top:8px;padding:8px 10px;background:#f5f5f3;border-radius:6px;line-height:1.7}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="header">
+  <span style="font-size:20px">📦</span>
+  <h1>ระบบส่งเอกสาร/สิ่งของระหว่างสาขา</h1>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('form')">📝 บันทึกใหม่</button>
+  <button class="tab" onclick="switchTab('history')">📋 ประวัติ</button>
+</div>
+
+<div class="content">
+
+<div id="tab-form">
+<div class="card">
+  <div class="section-title">บันทึกการส่งเอกสาร / สิ่งของ</div>
+  <div class="row2">
+    <div class="field"><label>วันที่ส่ง</label><input type="date" id="f-date"></div>
+    <div class="field"><label>เวลาส่ง</label><input type="time" id="f-time"></div>
+  </div>
+  <div class="row2">
+    <div class="field"><label>ผู้ส่ง</label><input type="text" id="f-sender" placeholder="ชื่อ-นามสกุล"></div>
+    <div class="field"><label>ฝ่าย</label><input type="text" id="f-dept" placeholder="เช่น บัญชี, ขาย, HR"></div>
+  </div>
+  <div class="row2">
+    <div class="field">
+      <label>จากสาขา</label>
+      <select id="f-from">
+        <option value="">-- เลือกสาขา --</option>
+        <option>รามอินทรา กม.2</option>
+        <option>สุวินทวงศ์</option>
+        <option>บางพูน</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>ถึงสาขา</label>
+      <select id="f-to">
+        <option value="">-- เลือกสาขา --</option>
+        <option>รามอินทรา กม.2</option>
+        <option>สุวินทวงศ์</option>
+        <option>บางพูน</option>
+      </select>
+    </div>
+  </div>
+  <div class="field"><label>รายการเอกสาร / สิ่งของ</label><textarea id="f-items" rows="3" placeholder="ระบุรายการ เช่น เอกสารสัญญา 2 ฉบับ, แฟ้มบัญชี"></textarea></div>
+  <div class="field"><label>ผู้รับ</label><input type="text" id="f-receiver" placeholder="ชื่อผู้รับปลายทาง"></div>
+  <div class="field">
+    <label>ผู้รับฝาก</label>
+    <select id="f-custodian">
+      <option value="">-- ไม่ระบุ --</option>
+      <option>คุณแตน (สุวินทวงศ์)</option>
+      <option>คุณหญิง (บางพูน)</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>รูปถ่าย</label>
+    <div class="photo-area" onclick="document.getElementById('f-photo').click()">
+      <span class="photo-icon">📷</span>แตะเพื่อถ่ายรูป / เลือกรูปภาพ
+      <input type="file" id="f-photo" accept="image/*" capture="environment" multiple style="display:none" onchange="previewPhotos(this)">
+    </div>
+    <div class="photo-preview" id="photo-preview"></div>
+  </div>
+  <div class="actions">
+    <button class="btn btn-primary" onclick="saveRecord()">✅ บันทึก</button>
+    <button class="btn" onclick="clearForm()">ล้างฟอร์ม</button>
+  </div>
+  <div class="gs-note" id="gs-note" style="display:none"></div>
+</div>
+</div>
+
+<div id="tab-history" style="display:none">
+<div class="search-bar">
+  <input type="text" id="search-input" placeholder="🔍 ค้นหา ผู้ส่ง / รายการ / สาขา..." oninput="renderHistory()">
+</div>
+<div class="filter-row">
+  <select id="filter-from" onchange="renderHistory()">
+    <option value="">ทุกสาขา (ต้นทาง)</option>
+    <option>รามอินทรา กม.2</option>
+    <option>สุวินทวงศ์</option>
+    <option>บางพูน</option>
+  </select>
+  <select id="filter-to" onchange="renderHistory()">
+    <option value="">ทุกสาขา (ปลายทาง)</option>
+    <option>รามอินทรา กม.2</option>
+    <option>สุวินทวงศ์</option>
+    <option>บางพูน</option>
+  </select>
+  <select id="filter-custodian" onchange="renderHistory()">
+    <option value="">ผู้รับฝากทั้งหมด</option>
+    <option>คุณแตน (สุวินทวงศ์)</option>
+    <option>คุณหญิง (บางพูน)</option>
+  </select>
+</div>
+<div id="history-list"></div>
+</div>
+
+</div>
+
+<!-- Detail Modal -->
+<div class="overlay" id="detail-modal">
+<div class="modal">
+  <div class="modal-title">📄 รายละเอียดการส่ง</div>
+  <div id="modal-body"></div>
+  <div class="actions">
+    <button class="btn btn-primary" onclick="editRecord()">✏️ แก้ไข</button>
+    <button class="btn btn-line" onclick="showLine()">💬 ส่ง Line</button>
+    <button class="btn btn-danger" onclick="confirmDelete()">🗑 ลบ</button>
+    <button class="btn" onclick="closeModal('detail-modal')">ปิด</button>
+  </div>
+  <div id="del-confirm-box"></div>
+</div>
+</div>
+
+<!-- Line Modal -->
+<div class="overlay" id="line-modal">
+<div class="modal">
+  <div class="modal-title">💬 ตัวอย่างข้อความ Line</div>
+  <div class="line-preview" id="line-text"></div>
+  <p style="font-size:12px;color:#888;margin-top:8px;line-height:1.7">คัดลอกข้อความนี้วางในกลุ่ม Line หรือเชื่อมต่อ Line Bot Webhook โดยส่ง payload นี้ไปยัง <code>https://api.line.me/v2/bot/message/push</code></p>
+  <div class="actions" style="margin-top:12px">
+    <button class="btn btn-primary" onclick="copyLine()">📋 คัดลอกข้อความ</button>
+    <button class="btn" onclick="closeModal('line-modal')">ปิด</button>
+  </div>
+</div>
+</div>
+
+<!-- Google Sheets Modal -->
+<div class="overlay" id="gs-modal">
+<div class="modal">
+  <div class="modal-title">📊 เชื่อมต่อ Google Sheets</div>
+  <p style="font-size:14px;color:#444;line-height:1.8;margin-bottom:14px">วาง Google Apps Script Web App URL เพื่อให้ระบบบันทึกข้อมูลลง Google Sheets อัตโนมัติ</p>
+  <div class="field">
+    <label>Google Apps Script Deployment URL</label>
+    <input type="url" id="gs-url" placeholder="https://script.google.com/macros/s/.../exec">
+  </div>
+  <div class="gs-note">
+    <b>วิธีสร้าง:</b><br>
+    1. เปิด Google Sheets ใหม่<br>
+    2. ไปที่ Extensions → Apps Script<br>
+    3. วาง Script ด้านล่างแล้ว Deploy → Web App<br>
+    4. ตั้ง Execute as: Me, Who has access: Anyone
+  </div>
+  <details style="margin-top:10px">
+    <summary style="font-size:13px;cursor:pointer;color:#1a56db">ดู Google Apps Script</summary>
+    <pre id="gas-code" style="font-size:11px;background:#f5f5f3;padding:10px;border-radius:6px;overflow-x:auto;margin-top:8px;line-height:1.6;white-space:pre-wrap"></pre>
+  </details>
+  <div class="actions" style="margin-top:14px">
+    <button class="btn btn-primary" onclick="saveGsUrl()">บันทึก URL</button>
+    <button class="btn" onclick="closeModal('gs-modal')">ปิด</button>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let records = JSON.parse(localStorage.getItem('btr-records')||'[]');
+let selectedId = null;
+let photoData = [];
+let gsUrl = localStorage.getItem('btr-gs-url')||'';
+
+const GAS_CODE = `function doPost(e) {
+  const data = JSON.parse(e.postData.contents);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('บันทึกการส่ง');
+  if (!sheet) {
+    sheet = ss.insertSheet('บันทึกการส่ง');
+    sheet.appendRow(['วันที่ส่ง','เวลาส่ง','ผู้ส่ง','ฝ่าย','จากสาขา','รายการ','รูปถ่าย','ผู้รับ','ถึงสาขา','ผู้รับฝาก','ID']);
+    sheet.getRange(1,1,1,11).setFontWeight('bold').setBackground('#1a1a1a').setFontColor('#ffffff');
+  }
+  sheet.appendRow([data.date,data.time,data.sender,data.dept,data.from,data.items,data.photoCount+'รูป',data.receiver,data.to,data.custodian,data.id]);
+  return ContentService.createTextOutput(JSON.stringify({status:'ok'})).setMimeType(ContentService.MimeType.JSON);
+}`;
+
+document.getElementById('gas-code').textContent = GAS_CODE;
+
+const today = new Date();
+document.getElementById('f-date').value = today.toISOString().slice(0,10);
+document.getElementById('f-time').value = today.toTimeString().slice(0,5);
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['form','history'][i]===t));
+  document.getElementById('tab-form').style.display=t==='form'?'block':'none';
+  document.getElementById('tab-history').style.display=t==='history'?'block':'none';
+  if(t==='history') renderHistory();
+}
+
+function previewPhotos(input){
+  photoData=[];
+  document.getElementById('photo-preview').innerHTML='';
+  [...input.files].forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      photoData.push(e.target.result);
+      const img=document.createElement('img');
+      img.src=e.target.result;
+      document.getElementById('photo-preview').appendChild(img);
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+async function saveRecord(){
+  const d={
+    id: selectedId||Date.now(),
+    date: document.getElementById('f-date').value,
+    time: document.getElementById('f-time').value,
+    sender: document.getElementById('f-sender').value.trim(),
+    dept: document.getElementById('f-dept').value.trim(),
+    from: document.getElementById('f-from').value,
+    to: document.getElementById('f-to').value,
+    items: document.getElementById('f-items').value.trim(),
+    receiver: document.getElementById('f-receiver').value.trim(),
+    custodian: document.getElementById('f-custodian').value,
+    photos: [...photoData],
+    photoCount: photoData.length
+  };
+  if(!d.sender||!d.from||!d.to||!d.items){showToast('⚠️ กรุณากรอกข้อมูลให้ครบ');return;}
+  const isEdit=records.some(r=>r.id===d.id);
+  if(isEdit){
+    const idx=records.findIndex(r=>r.id===d.id);
+    records[idx]=d;
+    showToast('✅ แก้ไขข้อมูลสำเร็จ');
+  } else {
+    records.unshift(d);
+    await pushToSheets(d);
+  }
+  localStorage.setItem('btr-records',JSON.stringify(records));
+  selectedId=null;
+  clearForm();
+}
+
+async function pushToSheets(d){
+  const url = gsUrl || localStorage.getItem('btr-gs-url');
+  const note = document.getElementById('gs-note');
+  if(!url){
+    note.style.display='block';
+    note.innerHTML='⚠️ ยังไม่ได้ตั้งค่า Google Sheets URL &nbsp;<button class="btn" style="padding:4px 10px;font-size:12px" onclick="openGsModal()">ตั้งค่า</button>';
+    return;
+  }
+  try{
+    note.style.display='block';
+    note.textContent='⏳ กำลังส่งข้อมูลไป Google Sheets...';
+    const payload={...d}; delete payload.photos;
+    await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+    note.textContent='✅ บันทึกลง Google Sheets สำเร็จ';
+    showToast('✅ บันทึกสำเร็จ');
+  }catch(e){
+    note.textContent='❌ ไม่สามารถส่งข้อมูลไป Google Sheets ได้';
+    showToast('✅ บันทึกในเครื่องแล้ว (ยังไม่ถึง Sheets)');
+  }
+}
+
+function clearForm(){
+  ['f-sender','f-dept','f-items','f-receiver'].forEach(id=>document.getElementById(id).value='');
+  ['f-from','f-to','f-custodian'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-photo').value='';
+  document.getElementById('photo-preview').innerHTML='';
+  photoData=[];
+  const t=new Date();
+  document.getElementById('f-date').value=t.toISOString().slice(0,10);
+  document.getElementById('f-time').value=t.toTimeString().slice(0,5);
+}
+
+function renderHistory(){
+  const q=document.getElementById('search-input').value.toLowerCase();
+  const ff=document.getElementById('filter-from').value;
+  const ft=document.getElementById('filter-to').value;
+  const fc=document.getElementById('filter-custodian').value;
+  const list=document.getElementById('history-list');
+  const data=records.filter(r=>{
+    const matchQ=!q||(r.sender+r.items+r.from+r.to+r.dept+r.receiver).toLowerCase().includes(q);
+    const matchF=!ff||r.from===ff;
+    const matchT=!ft||r.to===ft;
+    const matchC=!fc||r.custodian===fc;
+    return matchQ&&matchF&&matchT&&matchC;
+  });
+  if(!data.length){list.innerHTML='<div class="empty">ไม่พบรายการ</div>';return;}
+  list.innerHTML=data.map(r=>`
+    <div class="history-item" onclick="openDetail(${r.id})">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <span style="font-weight:600;font-size:14px">${r.items.slice(0,50)}${r.items.length>50?'...':''}</span>
+        ${r.photos&&r.photos.length?'<span style="font-size:11px;color:#888;white-space:nowrap">📷 '+r.photos.length+'</span>':''}
+      </div>
+      <div class="history-meta">
+        ${r.date} ${r.time} &nbsp;|&nbsp; ${r.sender}${r.dept?' ('+r.dept+')':''}<br>
+        <span class="badge badge-blue">${r.from}</span> → <span class="badge badge-green">${r.to}</span>
+        ${r.custodian?'&nbsp; <span class="badge badge-amber">'+r.custodian+'</span>':''}
+      </div>
+    </div>`).join('');
+}
+
+function openDetail(id){
+  const r=records.find(x=>x.id===id);
+  if(!r) return;
+  selectedId=id;
+  document.getElementById('del-confirm-box').innerHTML='';
+  const photos=r.photos&&r.photos.length?
+    `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">${r.photos.map(p=>`<img src="${p}" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e8e8e8">`).join('')}</div>`:
+    '<span style="color:#aaa">ไม่มีรูป</span>';
+  document.getElementById('modal-body').innerHTML=`
+    <table class="detail-table">
+      ${[['วันเวลา',r.date+' '+r.time+' น.'],['ผู้ส่ง',r.sender+(r.dept?' ('+r.dept+')':'')],['จากสาขา',r.from],['ถึงสาขา',r.to],['รายการ',r.items],['ผู้รับ',r.receiver||'-'],['ผู้รับฝาก',r.custodian||'-']].map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}
+      <tr><td>รูปถ่าย</td><td>${photos}</td></tr>
+    </table>`;
+  document.getElementById('detail-modal').classList.add('show');
+}
+
+function editRecord(){
+  const r=records.find(x=>x.id===selectedId);
+  if(!r) return;
+  document.getElementById('f-date').value=r.date;
+  document.getElementById('f-time').value=r.time;
+  document.getElementById('f-sender').value=r.sender;
+  document.getElementById('f-dept').value=r.dept;
+  document.getElementById('f-from').value=r.from;
+  document.getElementById('f-to').value=r.to;
+  document.getElementById('f-items').value=r.items;
+  document.getElementById('f-receiver').value=r.receiver;
+  document.getElementById('f-custodian').value=r.custodian;
+  photoData=r.photos?[...r.photos]:[];
+  document.getElementById('photo-preview').innerHTML=photoData.map(p=>`<img src="${p}" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid #e8e8e8">`).join('');
+  closeModal('detail-modal');
+  switchTab('form');
+}
+
+function confirmDelete(){
+  document.getElementById('del-confirm-box').innerHTML=`
+    <div class="del-confirm">ยืนยันลบรายการนี้ใช่ไหม?
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-danger" onclick="doDelete()">ลบเลย</button>
+        <button class="btn" onclick="document.getElementById('del-confirm-box').innerHTML=''">ยกเลิก</button>
+      </div>
+    </div>`;
+}
+
+function doDelete(){
+  records=records.filter(r=>r.id!==selectedId);
+  localStorage.setItem('btr-records',JSON.stringify(records));
+  closeModal('detail-modal');
+  renderHistory();
+  showToast('🗑 ลบรายการแล้ว');
+}
+
+function showLine(){
+  const r=records.find(x=>x.id===selectedId);
+  if(!r) return;
+  const hasPhoto=r.photos&&r.photos.length>0;
+  document.getElementById('line-text').textContent=
+`🚚 แจ้งการส่งเอกสาร/สิ่งของระหว่างสาขา
+━━━━━━━━━━━━━━━━━━━━
+📅 วันที่/เวลา  : ${r.date}  เวลา ${r.time} น.
+👤 ผู้ส่ง       : ${r.sender}${r.dept?' ('+r.dept+')':''}
+🏢 จากสาขา    : ${r.from}
+🏢 ถึงสาขา     : ${r.to}
+📦 รายการ      : ${r.items}
+👤 ผู้รับ       : ${r.receiver||'(ไม่ระบุ)'}${r.custodian?'\n🗂 ผู้รับฝาก   : '+r.custodian:''}${hasPhoto?'\n📷 รูปถ่าย    : '+r.photos.length+' รูป (ดูรูปแนบ)':''}
+━━━━━━━━━━━━━━━━━━━━
+📌 กรุณายืนยันการรับสิ่งของด้วยครับ/ค่ะ`;
+  closeModal('detail-modal');
+  document.getElementById('line-modal').classList.add('show');
+}
+
+function copyLine(){
+  const txt=document.getElementById('line-text').textContent;
+  navigator.clipboard.writeText(txt).then(()=>showToast('📋 คัดลอกแล้ว'));
+}
+
+function openGsModal(){
+  document.getElementById('gs-url').value=gsUrl;
+  document.getElementById('gs-modal').classList.add('show');
+}
+
+function saveGsUrl(){
+  gsUrl=document.getElementById('gs-url').value.trim();
+  localStorage.setItem('btr-gs-url',gsUrl);
+  closeModal('gs-modal');
+  showToast('✅ บันทึก URL แล้ว');
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('show')}));
+</script>
+</body>
+</html>
