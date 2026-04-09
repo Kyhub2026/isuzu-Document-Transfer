@@ -596,13 +596,13 @@ function buildLineText(r){
 [King's Yont Transfer]
 ━━━━━━━━━━━━━━━━━━━━
 📅 วันที่/เวลา  : ${r.date}  เวลา ${r.time} น.
-👤 ผู้ส่ง       : ${r.sender}${r.dept?' ('+r.dept+')':''}
+👤 ผู้ส่ง       : ${r.sender}${r.dept ? ' (' + r.dept + ')' : ''}
 🏢 จากสาขา    : ${r.from}
 🏢 ถึงสาขา     : ${r.to}
 📦 รายการ      : ${r.items}
-👤 ผู้รับ       : ${r.receiver||'(ไม่ระบุ)'}${r.custodian?"
-🗂 ผู้รับฝาก   : "+r.custodian:''}${r.photos&&r.photos.length?"
-📷 รูปถ่าย    : "+r.photos.length+" รูป (ดูรูปแนบ)":''}
+👤 ผู้รับ       : ${r.receiver || '(ไม่ระบุ)'}${r.custodian ? `
+🗂 ผู้รับฝาก   : ${r.custodian}` : ''}${r.photos && r.photos.length ? `
+📷 รูปถ่าย    : ${r.photos.length} รูป (ดูรูปแนบ)` : ''}
 ━━━━━━━━━━━━━━━━━━━━
 📌 กรุณายืนยันการรับสิ่งของด้วยครับ/ค่ะ`;
 }
