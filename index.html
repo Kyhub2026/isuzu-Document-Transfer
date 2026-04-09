@@ -420,14 +420,15 @@ function installApp(){
 }
 
 // SW registration
-if('serviceWorker' in navigator){
-  const swCode = `
-const CACHE='ky-v1';
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['.']))));
-self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
-  `;
-  const blob = new Blob([swCode],{type:'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(blob));
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      await navigator.serviceWorker.register('./sw.js');
+      console.log('Service Worker registered');
+    } catch (err) {
+      console.error('Service Worker registration failed:', err);
+    }
+  });
 }
 
 function switchTab(t){
