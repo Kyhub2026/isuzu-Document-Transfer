@@ -289,11 +289,11 @@ textarea{resize:none;line-height:1.6}
 <div class="overlay" id="line-modal" onclick="closeOnBg(event,'line-modal')">
 <div class="modal">
   <div class="modal-handle"></div>
-  <div class="modal-title">💬 ตัวอย่างข้อความ Line</div>
+  <div class="modal-title">💬 ยืนยันส่งข้อความ Line</div>
   <div class="line-preview" id="line-text"></div>
-  <p style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.7">เชื่อมต่อ Line Bot ผ่าน Webhook: <code>https://api.line.me/v2/bot/message/push</code></p>
+  <p style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.7">เมื่อกดยืนยัน ระบบจะส่งเข้ากลุ่มผ่าน Google Apps Script URL ที่ตั้งค่าไว้ด้านล่าง</p>
   <div class="actions" style="margin-top:12px">
-    <button class="btn btn-primary" style="flex:1" onclick="copyLine()">📋 คัดลอก</button>
+    <button class="btn btn-line" style="flex:1" onclick="confirmSendLine()">✅ ยืนยันส่ง</button>
     <button class="btn" style="flex:1" onclick="closeModal('line-modal')">ปิด</button>
   </div>
 </div>
@@ -591,10 +591,8 @@ function doDelete(){
   showToast('🗑 ลบรายการแล้ว');
 }
 
-function showLine(){
-  const r=records.find(x=>x.id===selectedId);if(!r) return;
-  document.getElementById('line-text').textContent=
-`🚚 แจ้งการส่งเอกสาร/สิ่งของระหว่างสาขา
+function buildLineText(r){
+  return `🚚 แจ้งการส่งเอกสาร/สิ่งของระหว่างสาขา
 [King's Yont Transfer]
 ━━━━━━━━━━━━━━━━━━━━
 📅 วันที่/เวลา  : ${r.date}  เวลา ${r.time} น.
@@ -602,11 +600,68 @@ function showLine(){
 🏢 จากสาขา    : ${r.from}
 🏢 ถึงสาขา     : ${r.to}
 📦 รายการ      : ${r.items}
-👤 ผู้รับ       : ${r.receiver||'(ไม่ระบุ)'}${r.custodian?"\n🗂 ผู้รับฝาก   : "+r.custodian:''}${r.photos&&r.photos.length?"\n📷 รูปถ่าย    : "+r.photos.length+" รูป (ดูรูปแนบ)":''}
+👤 ผู้รับ       : ${r.receiver||'(ไม่ระบุ)'}${r.custodian?"
+🗂 ผู้รับฝาก   : "+r.custodian:''}${r.photos&&r.photos.length?"
+📷 รูปถ่าย    : "+r.photos.length+" รูป (ดูรูปแนบ)":''}
 ━━━━━━━━━━━━━━━━━━━━
 📌 กรุณายืนยันการรับสิ่งของด้วยครับ/ค่ะ`;
+}
+
+function showLine(){
+  const r=records.find(x=>x.id===selectedId);if(!r) return;
+  document.getElementById('line-text').textContent=buildLineText(r);
   closeModal('detail-modal');
   document.getElementById('line-modal').classList.add('show');
+}
+
+async function confirmSendLine(){
+  const r=records.find(x=>x.id===selectedId);if(!r) return;
+  const url=gsUrl||localStorage.getItem('ky-gs-url');
+  if(!url){
+    closeModal('line-modal');
+    openGsModal();
+    showToast('⚠️ กรุณาตั้งค่า Google Apps Script URL ก่อน');
+    return;
+  }
+
+  try{
+    const payload={
+      action:'sendLine',
+      id:r.id,
+      date:r.date,
+      time:r.time,
+      sender:r.sender,
+      dept:r.dept,
+      from:r.from,
+      to:r.to,
+      items:r.items,
+      receiver:r.receiver||'',
+      custodian:r.custodian||'',
+      photoCount:r.photos&&r.photos.length?r.photos.length:0,
+      text:buildLineText(r)
+    };
+
+    const buttons=[...document.querySelectorAll('#line-modal .actions button')];
+    buttons.forEach(b=>b.disabled=true);
+    document.getElementById('line-text').textContent='⏳ กำลังส่งข้อความไปยัง LINE...';
+
+    const resp=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+    let result={};
+    try{ result=await resp.json(); }catch(e){}
+    if(!resp.ok || (result.status && result.status!=='sent' && result.status!=='ok')){
+      throw new Error(result.message||'send failed');
+    }
+
+    document.getElementById('line-text').textContent=buildLineText(r);
+    closeModal('line-modal');
+    showToast('✅ ส่งเข้า LINE กลุ่มแล้ว');
+  }catch(e){
+    document.getElementById('line-text').textContent=buildLineText(r);
+    showToast('❌ ส่ง LINE ไม่สำเร็จ');
+    console.error(e);
+  }finally{
+    [...document.querySelectorAll('#line-modal .actions button')].forEach(b=>b.disabled=false);
+  }
 }
 
 function copyLine(){
